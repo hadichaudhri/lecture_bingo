@@ -101,4 +101,11 @@ defmodule LectureBingo.Incidents do
   def change_incident(%Incident{} = incident, attrs \\ %{}) do
     Incident.changeset(incident, attrs)
   end
+
+  def to_state(incidents) do
+    Enum.map(
+      incidents,
+      &%{id: &1.id, title: &1.title, description: &1.description, occurred: false}
+    )
+  end
 end

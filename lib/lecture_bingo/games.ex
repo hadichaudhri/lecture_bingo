@@ -5,8 +5,10 @@ defmodule LectureBingo.Games do
 
   import Ecto.Query, warn: false
   alias LectureBingo.Repo
+  alias LectureBingo.Accounts.User
 
   alias LectureBingo.Games.Game
+  alias LectureBingo.Incidents
 
   @doc """
   Returns the list of games.
@@ -37,6 +39,12 @@ defmodule LectureBingo.Games do
   """
   def get_game!(id), do: Repo.get!(Game, id)
 
+  def get_user_game!(id, %User{} = user) do
+    Game
+    |> user_games_query(user)
+    |> Repo.get!(Game, id)
+  end
+
   @doc """
   Creates a game.
 
@@ -49,10 +57,53 @@ defmodule LectureBingo.Games do
       {:error, %Ecto.Changeset{}}
 
   """
-  def create_game(attrs \\ %{}) do
+  def create_game(attrs \\ %{}, %User{} = user) do
     %Game{}
     |> Game.changeset(attrs)
+    |> Ecto.Changeset.put_assoc(:user, user)
     |> Repo.insert()
+  end
+
+  def new_game(user) do
+    state =
+      Incidents.list_incidents()
+      |> Enum.take_random(3)
+      |> Incidents.to_state()
+
+    create_game(%{state: state}, user)
+  end
+
+  def toggle_incident_state(game, incident_id) do
+    match_id = String.to_integer(incident_id)
+    IO.inspect(match_id)
+
+    state =
+      Enum.map(
+        game.state,
+        toggle_incident_if_match(match_id)
+      )
+
+    IO.inspect(state)
+    # IO.inspect(toggle_incident_if_match(hd(game.state), hd(game.state).id))
+    {:ok, updated_game} = update_game(game, %{state: state})
+    updated_game
+    # game
+  end
+
+  def toggle_incident_if_match(match_id) do
+    fn
+      %{id: ^match_id} = incident ->
+        %{incident | occurred: !incident.occurred}
+
+      other ->
+        other
+    end
+  end
+
+  def determine_if_won(game) do
+    game.state
+    |> Enum.map(& &1.occurred)
+    |> Enum.all?()
   end
 
   @doc """
@@ -100,5 +151,9 @@ defmodule LectureBingo.Games do
   """
   def change_game(%Game{} = game, attrs \\ %{}) do
     Game.changeset(game, attrs)
+  end
+
+  def user_games_query(query, user) do
+    from(game in query, where: game.user_id == ^user.id)
   end
 end

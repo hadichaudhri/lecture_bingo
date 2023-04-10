@@ -12,7 +12,7 @@ defmodule LectureBingo.Games.Game do
   @doc false
   def changeset(game, attrs) do
     game
-    |> cast(attrs, [])
-    |> validate_required([])
+    |> cast(attrs, [:state])
+    |> validate_required([:state])
   end
 end

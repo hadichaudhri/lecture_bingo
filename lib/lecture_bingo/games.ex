@@ -20,7 +20,16 @@ defmodule LectureBingo.Games do
 
   """
   def list_games do
-    Repo.all(Game)
+    Game
+    |> Repo.all()
+    |> Repo.preload(:user)
+  end
+
+  def list_user_games(%User{} = user) do
+    Game
+    |> user_games_query(user)
+    |> Repo.all()
+    |> Repo.preload(:user)
   end
 
   @doc """

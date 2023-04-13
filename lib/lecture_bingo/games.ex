@@ -10,6 +10,40 @@ defmodule LectureBingo.Games do
   alias LectureBingo.Games.Game
   alias LectureBingo.Incidents
 
+  alias LectureBingo.Accounts
+
+  def subscribe() do
+    Phoenix.PubSub.subscribe(LectureBingo.PubSub, "cs290")
+  end
+
+  def broadcast({:ok, game}, :new_game_started = tag) do
+    Phoenix.PubSub.broadcast(
+      LectureBingo.PubSub,
+      "cs290",
+      tag
+    )
+
+    {:ok, game}
+  end
+
+  def maybe_broadcast({:ok, game}, :victory = tag) do
+    case victorious?(game) do
+      false ->
+        {:ok, game}
+
+      true ->
+        user = Accounts.get_user!(game.user_id)
+
+        Phoenix.PubSub.broadcast(
+          LectureBingo.PubSub,
+          "cs290",
+          {tag, user.email}
+        )
+
+        {:ok, game}
+    end
+  end
+
   @doc """
   Returns the list of games.
 
@@ -71,6 +105,7 @@ defmodule LectureBingo.Games do
     |> Game.changeset(attrs)
     |> Ecto.Changeset.put_assoc(:user, user)
     |> Repo.insert()
+    |> broadcast(:new_game_started)
   end
 
   def new_game(user) do
@@ -124,6 +159,7 @@ defmodule LectureBingo.Games do
     game
     |> Game.changeset(attrs)
     |> Repo.update()
+    |> maybe_broadcast(:victory)
   end
 
   @doc """

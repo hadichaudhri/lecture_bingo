@@ -68,8 +68,8 @@ defmodule LectureBingoWeb.LectureBingoLive do
   end
 
   def handle_event("toggle_incident", %{"id" => id}, socket) do
-    game = Games.toggle_incident_state(socket.assigns.game, id)
-    has_won = Games.determine_if_won(game)
+    {:ok, game} = Games.toggle_incident_state(socket.assigns.game, id)
+    has_won = Games.victorious?(game)
     {:noreply, assign(socket, game: game, has_won: has_won)}
   end
 end

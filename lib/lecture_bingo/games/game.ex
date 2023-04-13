@@ -9,6 +9,13 @@ defmodule LectureBingo.Games.Game do
     timestamps()
   end
 
+  def create_state(incidents) do
+    Enum.map(
+      incidents,
+      &%{id: &1.id, title: &1.title, description: &1.description, occurred: false}
+    )
+  end
+
   @doc false
   def changeset(game, attrs) do
     game

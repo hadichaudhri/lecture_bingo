@@ -74,45 +74,38 @@ defmodule LectureBingo.Games do
   end
 
   def new_game(user) do
-    state =
-      Incidents.list_incidents()
-      |> Enum.take_random(3)
-      |> Incidents.to_state()
-
+    state = initialize_game_state()
     create_game(%{state: state}, user)
   end
 
+  def initialize_game_state() do
+    Incidents.list_incidents()
+    |> Enum.take_random(3)
+    |> Game.create_state()
+  end
+
   def toggle_incident_state(game, incident_id) do
-    match_id = String.to_integer(incident_id)
-    IO.inspect(match_id)
+    toggle_id = String.to_integer(incident_id)
 
     state =
       Enum.map(
         game.state,
-        toggle_incident_if_match(match_id)
+        &maybe_toggle_incident(&1, toggle_id)
       )
 
-    IO.inspect(state)
-    # IO.inspect(toggle_incident_if_match(hd(game.state), hd(game.state).id))
-    {:ok, updated_game} = update_game(game, %{state: state})
-    updated_game
-    # game
+    update_game(game, %{state: state})
   end
 
-  def toggle_incident_if_match(match_id) do
-    fn
-      %{id: ^match_id} = incident ->
-        %{incident | occurred: !incident.occurred}
-
-      other ->
-        other
-    end
+  def maybe_toggle_incident(%{id: id} = incident, toggled_id) when id == toggled_id do
+    %{incident | occurred: !incident.occurred}
   end
 
-  def determine_if_won(game) do
+  def maybe_toggle_incident(incident, _), do: incident
+
+  def victorious?(game) do
     game.state
-    |> Enum.map(& &1.occurred)
-    |> Enum.all?()
+    |> Enum.filter(&(&1.occurred == false))
+    |> Enum.empty?()
   end
 
   @doc """
